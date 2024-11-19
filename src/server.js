@@ -7,7 +7,7 @@ import productRouter from "./routes/products.router.js";
 
 // This imports are to run those files
 import mongoose from "./db/configMongoDB.js";
-import database_pool from "./db/configMysql.js";
+// import database_pool from "./db/configMysql.js";
 import transporter from "./config/transporter.config.js";
 import ProductRepository from "./repositories/product.repository.js";
 

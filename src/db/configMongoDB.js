@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import ENV from "../config/enviroment.config.js";
 
 mongoose
-  .connect(ENV.DB_URL)
+  .connect(ENV.DB_CLOUD_URL)
   .then(() => {
     console.log("Connected to the MongoDB database 🦾");
   })
