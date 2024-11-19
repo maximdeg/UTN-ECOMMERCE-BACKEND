@@ -43,3 +43,7 @@ class ResponseBuilder {
 }
 
 export default ResponseBuilder;
+
+export const responseBuilder = (ok, status, message, payload) => {
+  return new ResponseBuilder().setOk(ok).setStatus(status).setMessage(message).setPayload(payload).build();
+};

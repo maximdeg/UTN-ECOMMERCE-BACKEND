@@ -1,11 +1,11 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
 import ENV from "../config/enviroment.config.js";
-import ResponseBuilder from "../utils/builders/responseBuilder.js";
 import User from "../models/user.model.js";
 import UserRepository from "../repositories/user.repository.js";
+import ResponseBuilder from "../utils/builders/responseBuilder.js";
 import { sendEmail } from "../utils/mail.util.js";
+import { responseBuilder } from "../utils/builders/responseBuilder.js";
 
 export const registerUserController = async (req, res) => {
   try {
@@ -13,13 +13,7 @@ export const registerUserController = async (req, res) => {
     const existsUser = await UserRepository.getByEmail(email);
 
     if (existsUser) {
-      const response = new ResponseBuilder()
-        .setOk(false)
-        .setStatus(400)
-        .setPayload({ detail: "The email is used by another user" })
-        .setMessage("BAD_REQUEST")
-        .build();
-      return res.status(400).json(response);
+      return res.status(400).json(responseBuilder(false, 400, "BAD_REQUEST", { detail: "The email is used by another user" }));
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -51,21 +45,9 @@ export const registerUserController = async (req, res) => {
 
     await newUser.save();
 
-    const response = new ResponseBuilder()
-      .setOk(true)
-      .setStatus(200)
-      .setPayload({ detail: newUser, message: "User created" })
-      .setMessage("SUCCESS")
-      .build();
-    return res.status(201).json(response);
+    return res.status(201).json(responseBuilder(true, 201, "SUCCESS", { detail: newUser, message: "User created" }));
   } catch (err) {
-    const response = new ResponseBuilder()
-      .setOk(false)
-      .setStatus(400)
-      .setPayload({ detail: "Server error" })
-      .setMessage("INTERNAL_SERVER_ERROR")
-      .build();
-    return res.status(400).json(response);
+    return res.status(400).json(responseBuilder(false, 400, "SERVER_ERROR", { detail: "Server error", error: err.message }));
   }
 };
 
@@ -74,13 +56,7 @@ export const verifyMailValidationTokenController = async (req, res) => {
     const { verification_token } = req.params;
 
     if (!verification_token) {
-      const response = new ResponseBuilder()
-        .setOk(false)
-        .setStatus(400)
-        .setPayload({ detail: "Invalid verification token" })
-        .setMessage("BAD_REQUEST")
-        .build();
-      return res.status(400).json(response);
+      return res.status(400).json(responseBuilder(false, 400, "BAD_REQUEST", { detail: "Invalid verification token" }));
     }
 
     const decoded = jwt.verify(verification_token, ENV.JWT_SECRET);
@@ -97,16 +73,7 @@ export const verifyMailValidationTokenController = async (req, res) => {
 
     await user.save();
 
-    const response = new ResponseBuilder()
-      .setOk(true)
-      .setMessage("SUCCESS")
-      .setStatus(200)
-      .setPayload({
-        message: "Email verified successfully",
-      })
-      .build();
-
-    return res.status(200).json(response);
+    return res.status(200).json(responseBuilder(true, 200, "SUCCESS", { message: "Email verified successfully" }));
   } catch (err) {
     console.error(err.message);
   }
@@ -119,53 +86,27 @@ export const loginController = async (req, res) => {
     const user = await UserRepository.getByEmail(email);
 
     if (!user) {
-      const response = new ResponseBuilder()
-        .setOk(false)
-        .setStatus(401)
-        .setMessage("USER_NOT_FOUND")
-        .setPayload({ detail: "User is not registrated. Please SIGN UP" })
-        .build();
-
-      return res.status(401).json(response);
+      return res.status(401).json(responseBuilder(false, 401, "USER_NOT_FOUND", { detail: "User is not registrated. Please SIGN UP" }));
     }
 
     if (!user.emailVerified) {
-      const response = new ResponseBuilder()
-        .setOk(false)
-        .setStatus(403) // Prohibited content for user without authorization or verification
-        .setMessage("USER_NOT_VERIFIED")
-        .setPayload({
-          detail: "User not verified. Please go to your email to verify your profile",
-        })
-        .build();
-
-      return res.status(403).json(response);
+      return res
+        .status(403)
+        .json(responseBuilder(false, 403, "USER_NOT_VERIFIED", { detail: "User not verified. Please go to your email to verify your profile" }));
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
-      const response = new ResponseBuilder()
-        .setOk(false)
-        .setStatus(401)
-        .setMessage("INVALID_PASSWORD")
-        .setPayload({
-          detail: "The passwrod is not correct",
-        })
-        .build();
-
-      return res.status(401).json(response);
+      return res.status(401).json(responseBuilder(false, 401, "INVALID_PASSWORD", { detail: "The passwrod is not correct" }));
     }
 
     const token = jwt.sign({ email: user.email, id: user._id, role: user.role }, ENV.JWT_SECRET, {
       expiresIn: ENV.JWT_TIME,
     });
 
-    const response = new ResponseBuilder()
-      .setOk(true)
-      .setStatus(200)
-      .setMessage("Logged In")
-      .setPayload({
+    res.status(200).json(
+      responseBuilder(true, 200, "Logged In", {
         token,
         user: {
           id: user._id,
@@ -174,20 +115,9 @@ export const loginController = async (req, res) => {
           role: user.role,
         },
       })
-      .build();
-
-    res.status(200).json(response);
+    );
   } catch (err) {
-    const response = new ResponseBuilder()
-      .setOk(false)
-      .setStatus(500)
-      .setMessage("INTERNAL_SERVER_ERROR")
-      .setPayload({
-        detail: err.message,
-      })
-      .build();
-
-    res.status(500).json(response);
+    res.status(500).json(responseBuilder(false, 500, "INTERNAL_SERVER_ERROR", { detail: err.message }));
   }
 };
 
@@ -197,14 +127,7 @@ export const forgotPasswordController = async (req, res) => {
     // TODO: validate email
     const user = await UserRepository.getByEmail(email);
     if (!user) {
-      const response = new ResponseBuilder()
-        .setOk(false)
-        .setStatus(401)
-        .setMessage("USER_NOT_FOUND")
-        .setPayload({ detail: "User is not registrated. Please SIGN UP" })
-        .build();
-
-      return res.status(401).json(response);
+      return res.status(401).json(responseBuilder(false, 401, "USER_NOT_FOUND", { detail: "User is not registrated. Please SIGN UP" }));
     }
 
     const resetToken = jwt.sign({ email: user.email }, ENV.JWT_SECRET, {

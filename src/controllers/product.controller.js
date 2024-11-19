@@ -1,5 +1,5 @@
 import ProductRepository from "../repositories/product.repository.js";
-import ResponseBuilder from "../utils/builders/responseBuilder.js";
+import { responseBuilder } from "../utils/builders/responseBuilder.js";
 import { validateFormController } from "./errors.controller.js.js";
 import ENV from "../config/enviroment.config.js";
 import jwt from "jsonwebtoken";
@@ -7,10 +7,6 @@ import jwt from "jsonwebtoken";
 // PENSAR POR CADA FUNCION:
 // QUE RECIBO
 // QUE DEVUELVO
-
-const responseBuilder = (ok, status, message, payload) => {
-  return new ResponseBuilder().setOk(ok).setStatus(status).setMessage(message).setPayload(payload).build();
-};
 
 export const getAllProductsController = async (req, res) => {
   try {
